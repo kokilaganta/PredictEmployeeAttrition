@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-size: cover;
+            background-repeat: no-repeat;
+            font-family: Arial, sans-serif;
+            background-position: center; /* Default position */
+            background-attachment: fixed;
+        }
+
+        #content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            max-width: 80%; /* Adjusted for 1920x1080 screen */
+        }
+
+        h1 {
+            color: blue;
+            font-size: 3em; /* Adjusted for larger screen */
+        }
+
+        #home-btn {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 20px;
+        }
+
+        #home-btn:hover {
+            background-color: #0056b3;
+        }
+        body {
+    background-position: center center;
+}
+
+/* Adjust background position for smaller screens */
+@media (max-width: 768px) {
+    body {
+        background-position: top center; /* Align background to top */
+    }
+}
+
+/* Adjust background position for larger screens */
+@media (min-width: 1000px) {
+    body {
+        background-position: center right; /* Align background to center right */
+    }
+}
+    </style>
+</head>
+
+<body>
+    <div id="content">
+        <h1 id="MyEdit">This text will change</h1>
+        <a href="{{ url_for('index') }}" id="home-btn">Go back to Home</a>
+    </div>
+
+    <script>
+        var key = '{{ predict[0] }}'; // Assuming predict is a variable from your backend
+        var message = document.getElementById("MyEdit");
+
+        if (key == 1) {
+            document.body.style.backgroundImage = "url('static/images/leave1.jpg')"; // Change the background image
+            message.innerHTML = "Employee expected to Leave";
+            // Example: Change background position
+            document.body.style.backgroundPosition = " 50% 100%;"; // Adjust as needed
+        } else {
+            document.body.style.backgroundImage = "url('static/images/stay1.jpg')"; // Change the background image
+            message.innerHTML = "Employee Continues in the Organization";
+            // Example: Change background position
+            document.body.style.backgroundPosition = "center right"; // Adjust as needed
+        }
+    </script>
+</body>
+
+</html>

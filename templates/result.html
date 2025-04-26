@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Prediction Result</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+        }
+
+        #content {
+            text-align: center;
+            max-width: 80%;
+            margin: 50px auto 30px;
+        }
+
+        h1 {
+            color: #007bff;
+            font-size: 2.8em;
+        }
+
+        h2, h3 {
+            text-align: center;
+            color: #333;
+        }
+
+        #home-btn {
+            padding: 10px 25px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+
+        #home-btn:hover {
+            background-color: #0056b3;
+        }
+
+        img {
+            display: block;
+            margin: 15px auto;
+            max-width: 80%;
+            height: auto;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .graph-section {
+            margin-bottom: 40px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="content">
+        
+        <h1 id="MyEdit">{{ message }}</h1>
+
+    </div>
+
+
+    <!-- <script>
+        var key = parseInt('{{ predict[0] }}');  // Convert string to number
+        var message = document.getElementById("MyEdit");
+    
+        if (key === 1) {
+            message.innerHTML = "⚠️ Employee is expected to Leave";
+        } else {
+            message.innerHTML = "✅ Employee is expected to Stay";
+        }
+    </script> -->
+    
+
+    <div>
+        <h2>📊 Factors Affecting Prediction</h2>
+
+        <div class="graph-section">
+            <h2>🕒 Employee Workload</h2>
+            <h3>Bar Graph</h3>
+            <img src="data:image/png;base64,{{ hours_bar }}" alt="Hours Bar Graph">
+            <h3>Curve Graph</h3>
+            <img src="data:image/png;base64,{{ hours_curve }}" alt="Hours Curve Graph">
+        </div>
+
+        <div class="graph-section">
+            <h2>⭐ Employee Ratings</h2>
+            <h3>Bar Graph</h3>
+            <img src="data:image/png;base64,{{ ratings_bar }}" alt="Ratings Bar Graph">
+            <h3>Curve Graph</h3>
+            <img src="data:image/png;base64,{{ ratings_curve }}" alt="Ratings Curve Graph">
+        </div>
+    </div>
+
+    <div id="content">
+        <a href="{{ url_for('index') }}" id="home-btn">🏠 Go back to Home</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Attrition Prediction</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+        }
+        .container1 {
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+            flex-wrap: wrap;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .right, .left {
+            flex: 1;
+            padding: 20px;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: auto;
+        }
+        .top-left {
+            position: absolute;
+            top: 0;
+            left: 0;
+            padding: 8px 16px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-bottom-right-radius: 5px;
+        }
+        .top-left strong {
+            font-weight: bold;
+        }
+        .top-left a {
+            text-decoration: none;
+            color: #007bff;
+        }
+        .top-left a:hover {
+            text-decoration: underline;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table td {
+            padding: 10px;
+            vertical-align: top;
+        }
+        input[type="number"], select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        
+
+        input[type="submit"] {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+        @media (min-width: 768px) {
+            .right, .left {
+                max-width: 50%;
+            }
+        }
+    </style>
+    <script>
+        function validateInput(event) {
+            var input = parseFloat(event.target.value);
+            var inputId = event.target.id;
+
+            if (isNaN(input) || input < 0 || input > 1) {
+                alert("Please enter a valid value between 0 and 1 for " + inputId.replace('_', ' '));
+                event.target.value = ""; // Clear invalid input
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="top-left">
+        <div>
+            Logged in: <strong>{{ session.get('name', 'Guest') }}</strong> | 
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+    </div>
+    
+    <div class="container1">
+        <div class="right">
+            <img src="{{ url_for('static', filename='images/j1.svg') }}" alt="Employee Image"/>
+        </div>
+        <div class="left">
+            <header>
+                <h1>EMPLOYEE ATTRITION PREDICTION</h1>
+            </header>
+            <!-- Keep the same DOCTYPE, head, and styles -->
+
+            <form action="{{ url_for('predict') }}" method="POST">
+                <table>
+                    <tr>
+                        <td>Satisfaction level rating</td>
+                        <td><input type="number" name="satisfaction_level" id="satisfaction_level" step="0.01" min="0" max="1" onchange="validateInput(event)" required /></td>
+                    </tr>
+                    <tr>
+                        <td>Last evaluation rating</td>
+                        <td><input type="number" name="last_evaluation" id="last_evaluation" step="0.01" min="0" max="1" onchange="validateInput(event)" required /></td>
+                    </tr>
+                    <tr>
+                        <td>No of projects</td>
+                        <td><input type="number" name="number_project" min="0" required /></td> <!-- 🔥 Corrected name -->
+                    </tr>
+                    <tr>
+                        <td>Average monthly hours</td>
+                        <td><input type="number" name="average_monthly_hours" min="0" required /></td>
+                    </tr>
+                    <tr>
+                        <td>Years at company</td>
+                        <td><input type="number" name="time_spend_company" min="0" required /></td> <!-- 🔥 Corrected name -->
+                    </tr>
+                    <tr>
+                        <td>Work accident (0 or 1)</td>
+                        <td><input type="number" name="work_accident" min="0" max="1" required /></td>
+                    </tr>
+                    <tr>
+                        <td>Promotion in last 5 years (0 or 1)</td>
+                        <td><input type="number" name="promotion_last_5years" min="0" max="1" required /></td>
+                    </tr>
+                    <tr>
+                        <td>Department</td>
+                        <td>
+                            <select name="Department"> <!-- 🔥 Corrected name -->
+                                <option value="7">Sales</option>
+                                <option value="2">Accounting</option>
+                                <option value="3">HR</option>
+                                <option value="9">Technical</option>
+                                <option value="4">Management</option>
+                                <option value="0">IT</option>
+                                <option value="6">Product Management</option>
+                                <option value="5">Marketing</option>
+                                <option value="1">R&D</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Salary</td>
+                        <td>
+                            <select name="salary">
+                                <option value="1">Low</option>
+                                <option value="2">Medium</option>
+                                <option value="3">High</option>
+                            </select>
+                        </td>
+                    </tr>
+                </table>
+                <p><input type="submit" value="Submit" /></p>
+            </form>
+
+        </div>
+    </div>
+</body>
+</html>
