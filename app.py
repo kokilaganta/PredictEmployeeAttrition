@@ -9,6 +9,8 @@ import os
 import io
 import base64
 import matplotlib.pyplot as plt
+from urllib.parse import urlparse
+
 # Initialize Flask app
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Needed for session management
@@ -17,12 +19,14 @@ app.secret_key = os.urandom(24)  # Needed for session management
 mysql_url = os.getenv('MYSQL_URL', 'mysql://root:jsQSqZZuPRkTWmickRoBQYLmlxCVrKvt@mainline.proxy.rlwy.net:29593/railway')
 
 # Parse the URL to extract connection details
-url = mysql_url.split('://')[1].split(':')
-host = url[0]
-port = int(url[1].split('/')[0])
-database = url[1].split('/')[1]
-user = url[2].split('@')[0]
-password = url[2].split('@')[1]
+url = urlparse(mysql_url)
+
+# Extract connection details
+host = url.hostname
+port = url.port
+database = url.path[1:]  # Remove leading '/'
+user = url.username
+password = url.password
 
 # Configure Flask MySQL
 app.config['MYSQL_HOST'] = host
