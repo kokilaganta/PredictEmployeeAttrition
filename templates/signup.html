@@ -17,6 +17,7 @@
 
     body {
       background-color: #080710;
+      font-family: 'Poppins', sans-serif;
     }
 
     .background {
@@ -48,7 +49,6 @@
     }
 
     form {
-      height: 580px;
       width: 400px;
       background-color: rgba(255, 255, 255, 0.13);
       position: absolute;
@@ -62,19 +62,11 @@
       padding: 50px 35px;
     }
 
-    form * {
-      font-family: 'Poppins', sans-serif;
-      color: #ffffff;
-      letter-spacing: 0.5px;
-      outline: none;
-      border: none;
-    }
-
     form h3 {
       font-size: 32px;
       font-weight: 500;
-      line-height: 42px;
       text-align: center;
+      color: #ffffff;
     }
 
     label {
@@ -82,6 +74,7 @@
       margin-top: 30px;
       font-size: 16px;
       font-weight: 500;
+      color: #ffffff;
     }
 
     input {
@@ -94,6 +87,7 @@
       margin-top: 8px;
       font-size: 14px;
       font-weight: 300;
+      color: #ffffff;
     }
 
     ::placeholder {
@@ -115,10 +109,20 @@
     .bottom {
       margin-top: 20px;
       text-align: center;
+      color: #ffffff;
+    }
+
+    .alert-warning {
+      color: #ffcc00;
+      background-color: #3c3c3c;
+      padding: 10px;
+      margin-bottom: 20px;
+      border-radius: 5px;
     }
   </style>
 </head>
 <body>
+
   <div class="background">
     <div class="shape"></div>
     <div class="shape"></div>
@@ -128,6 +132,7 @@
     {% if message %}
       <div class="alert alert-warning">{{ message }}</div>
     {% endif %}
+    
     <h3>Register Here</h3>
 
     <label for="name">Name</label>
@@ -142,8 +147,9 @@
     <button type="submit">Register</button>
 
     <div class="bottom">
-      <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+      <p>Already have an account? <a href="{{ url_for('login') }}" style="color: #ffffff;">Login here</a></p>
     </div>
   </form>
+
 </body>
 </html>
