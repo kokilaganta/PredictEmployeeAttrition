@@ -43,37 +43,47 @@ mysql = MySQL(app)
 def signup():
     message = ''
     if request.method == 'POST':
-        full_name = request.form.get('name')
-        email = request.form.get('email')
-        password = request.form.get('password')
+        # Get form data
+        full_name = request.form.get('name')  # full name from the form
+        email = request.form.get('email')  # email from the form
+        password = request.form.get('password')  # password from the form
 
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
         try:
+            # Check if the email already exists in the database
             cursor.execute('SELECT * FROM users WHERE email = %s', (email,))
             account = cursor.fetchone()
 
             if account:
+                # If the account already exists
                 message = 'Account already exists!'
             elif not re.match(r'[^@]+@[^@]+\.[^@]+', email):
+                # If the email format is invalid
                 message = 'Invalid email format!'
             elif not full_name or not password or not email:
+                # If any of the form fields are empty
                 message = 'Please fill out the form!'
             else:
+                # Hash the password before storing
                 hashed_password = generate_password_hash(password)
+
+                # Insert new user into the database
                 cursor.execute(
                     'INSERT INTO users (full_name, email, password) VALUES (%s, %s, %s)',
                     (full_name, email, hashed_password)
                 )
                 mysql.connection.commit()
 
-                # Log the user in after successful signup
+                # Get the user details after insertion
                 cursor.execute('SELECT * FROM users WHERE email = %s', (email,))
                 user = cursor.fetchone()
-                session['user_id'] = user['id']  # Store user ID in session
+
+                # Store user ID in session to log the user in
+                session['user_id'] = user['userid']  # Assuming 'userid' is the primary key
 
                 flash("Registration successful! You're now logged in.", "success")
-                return redirect(url_for('index'))  # Redirect to home after signup
+                return redirect(url_for('index'))  # Redirect to the home page after successful signup
 
         except MySQLdb.Error as e:
             print(f"MySQL error: {e}")
@@ -81,6 +91,7 @@ def signup():
         finally:
             cursor.close()
 
+    # Render the signup page with any messages
     return render_template('signup.html', message=message)
 
 # Login Route
