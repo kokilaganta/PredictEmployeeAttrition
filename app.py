@@ -6,7 +6,9 @@ import re
 import pickle
 import pandas as pd
 import os
-
+import io
+import base64
+import matplotlib.pyplot as plt
 # Initialize Flask app
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Needed for session management
