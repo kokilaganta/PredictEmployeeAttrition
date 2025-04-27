@@ -45,10 +45,30 @@ connection = MySQLdb.connect(
 
 @app.route('/')
 def index():
-    cur = mysql.connection.cursor()
-    cur.execute('SELECT * FROM users')
-    results = cur.fetchall()
-    return str(results)
+    try:
+        # Create a cursor object to interact with the database
+        cursor = mysql.connection.cursor()
+
+        # Execute query to fetch all users
+        cursor.execute('SELECT * FROM users')
+        
+        # Fetch all results
+        results = cursor.fetchall()
+        
+        # Close the cursor
+        cursor.close()
+
+        # Return the results to be displayed in a template
+        return render_template('index.html', results=results)
+    
+    except Exception as e:
+        # Handle any errors (e.g., database connection issues)
+        print(f"Error occurred: {e}")
+        return "There was an error retrieving the data."
+
+# Running the app
+if __name__ == '__main__':
+    app.run(debug=True)
 
 # Signup Route
 @app.route('/signup', methods=['POST', 'GET'])

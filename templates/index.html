@@ -67,8 +67,6 @@
             border: 1px solid #ccc;
             box-sizing: border-box;
         }
-        
-
         input[type="submit"] {
             width: 100%;
             padding: 10px;
@@ -115,8 +113,8 @@
             <header>
                 <h1>EMPLOYEE ATTRITION PREDICTION</h1>
             </header>
-            <!-- Keep the same DOCTYPE, head, and styles -->
 
+            <!-- Prediction Form -->
             <form action="{{ url_for('predict') }}" method="POST">
                 <table>
                     <tr>
@@ -129,7 +127,7 @@
                     </tr>
                     <tr>
                         <td>No of projects</td>
-                        <td><input type="number" name="number_project" min="0" required /></td> <!-- 🔥 Corrected name -->
+                        <td><input type="number" name="number_project" min="0" required /></td>
                     </tr>
                     <tr>
                         <td>Average monthly hours</td>
@@ -137,7 +135,7 @@
                     </tr>
                     <tr>
                         <td>Years at company</td>
-                        <td><input type="number" name="time_spend_company" min="0" required /></td> <!-- 🔥 Corrected name -->
+                        <td><input type="number" name="time_spend_company" min="0" required /></td>
                     </tr>
                     <tr>
                         <td>Work accident (0 or 1)</td>
@@ -150,7 +148,7 @@
                     <tr>
                         <td>Department</td>
                         <td>
-                            <select name="Department"> <!-- 🔥 Corrected name -->
+                            <select name="Department" required>
                                 <option value="7">Sales</option>
                                 <option value="2">Accounting</option>
                                 <option value="3">HR</option>
@@ -166,7 +164,7 @@
                     <tr>
                         <td>Salary</td>
                         <td>
-                            <select name="salary">
+                            <select name="salary" required>
                                 <option value="1">Low</option>
                                 <option value="2">Medium</option>
                                 <option value="3">High</option>
@@ -176,7 +174,6 @@
                 </table>
                 <p><input type="submit" value="Submit" /></p>
             </form>
-
         </div>
     </div>
 </body>
