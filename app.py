@@ -1,203 +1,139 @@
-from flask import Flask, redirect, render_template, request, session, url_for, flash
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_mysqldb import MySQL
-import MySQLdb
+from werkzeug.security import generate_password_hash, check_password_hash
+import MySQLdb.cursors
 import re
+import os
 import pickle
 import pandas as pd
-import os
-import io
-import base64
-import matplotlib.pyplot as plt
+
 from urllib.parse import urlparse
 
-# Initialize Flask app
+# --- Flask App Setup ---
 app = Flask(__name__)
-app.secret_key = os.urandom(24)  # Needed for session management
+app.secret_key = os.urandom(24)
 
-# Get MySQL URL from environment variables
+# --- MySQL Database Setup (Railway DB) ---
 mysql_url = os.getenv('MYSQL_URL', 'mysql://root:jsQSqZZuPRkTWmickRoBQYLmlxCVrKvt@mainline.proxy.rlwy.net:29593/railway')
-
-# Parse the URL to extract connection details
 url = urlparse(mysql_url)
 
-# Extract connection details
-host = url.hostname
-port = url.port
-database = url.path[1:]  # Remove leading '/'
-user = url.username
-password = url.password
-
-# Configure Flask MySQL
-app.config['MYSQL_HOST'] = host
-app.config['MYSQL_USER'] = user
-app.config['MYSQL_PASSWORD'] = password
-app.config['MYSQL_DB'] = database
-app.config['MYSQL_PORT'] = port
+app.config['MYSQL_HOST'] = url.hostname
+app.config['MYSQL_USER'] = url.username
+app.config['MYSQL_PASSWORD'] = url.password
+app.config['MYSQL_DB'] = url.path.lstrip('/')  # 'railway' from URL
+app.config['MYSQL_PORT'] = url.port
 
 # Initialize MySQL
 mysql = MySQL(app)
 
-# Signup Route
-@app.route('/signup', methods=['POST', 'GET'])
-def signup():
-    message = ''
-    if request.method == 'POST':
-        # Get form data
-        full_name = request.form.get('name')  # full name from the form
-        email = request.form.get('email')  # email from the form
-        password = request.form.get('password')  # password from the form
+# --- Routes ---
 
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-
-        try:
-            # Check if the email already exists in the database
-            cursor.execute('SELECT * FROM users WHERE email = %s', (email,))
-            account = cursor.fetchone()
-
-            if account:
-                # If the account already exists
-                message = 'Account already exists!'
-            elif not re.match(r'[^@]+@[^@]+\.[^@]+', email):
-                # If the email format is invalid
-                message = 'Invalid email format!'
-            elif not full_name or not password or not email:
-                # If any of the form fields are empty
-                message = 'Please fill out the form!'
-            else:
-                # Hash the password before storing
-                hashed_password = generate_password_hash(password)
-
-                # Insert new user into the database
-                cursor.execute(
-                    'INSERT INTO users (full_name, email, password) VALUES (%s, %s, %s)',
-                    (full_name, email, hashed_password)
-                )
-                mysql.connection.commit()
-
-                # Get the user details after insertion
-                cursor.execute('SELECT * FROM users WHERE email = %s', (email,))
-                user = cursor.fetchone()
-
-                # Store user ID in session to log the user in
-                session['user_id'] = user['userid']  # Assuming 'userid' is the primary key
-
-                flash("Registration successful! You're now logged in.", "success")
-                return redirect(url_for('index'))  # Redirect to the home page after successful signup
-
-        except MySQLdb.Error as e:
-            print(f"MySQL error: {e}")
-            message = 'Database error, please try again later.'
-        finally:
-            cursor.close()
-
-    # Render the signup page with any messages
-    return render_template('signup.html', message=message)
-
-# Login Route
-@app.route('/login', methods=['POST', 'GET'])
-def login():
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-
-        if not email or not password:
-            flash("Email and password are required", "error")
-            return redirect(url_for('login'))
-
-        try:
-            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-            cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
-            user = cursor.fetchone()
-            cursor.close()
-
-            if user and check_password_hash(user['password'], password):
-                session['user_id'] = user['id']  # Store user ID in session
-                flash("Login successful!", "success")
-                return redirect(url_for('index'))  # Redirect to home page
-
-            else:
-                flash("Invalid email or password", "error")
-
-        except MySQLdb.Error as e:
-            print(f"Database Error: {e}")
-            flash("A database error occurred. Please try again later.", "error")
-
-        except Exception as e:
-            print(f"Error: {e}")
-            flash("An unexpected error occurred. Please try again later.", "error")
-
-    return render_template('login.html')
-
-# Index Route - Home Page
+# Home Page
 @app.route('/')
 def index():
     if 'user_id' not in session:
-        return redirect(url_for('login'))  # Redirect to login if user is not logged in
-
+        return redirect(url_for('login'))
+    
     try:
         cursor = mysql.connection.cursor()
         cursor.execute('SELECT * FROM users')
         results = cursor.fetchall()
         cursor.close()
         return render_template('index.html', results=results)
-
     except Exception as e:
-        print(f"Error occurred: {e}")
-        return "There was an error retrieving the data."
+        print(f"Error: {e}")
+        return "Database connection error."
 
-# Logout Route
+# Signup Page
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    message = ''
+    if request.method == 'POST':
+        full_name = request.form['name']
+        email = request.form['email']
+        password = request.form['password']
+
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT * FROM users WHERE email = %s', (email,))
+        account = cursor.fetchone()
+
+        if account:
+            message = 'Account already exists!'
+        elif not re.match(r'[^@]+@[^@]+\.[^@]+', email):
+            message = 'Invalid email address!'
+        elif not full_name or not password or not email:
+            message = 'Please fill out the form completely!'
+        else:
+            hashed_password = generate_password_hash(password)
+            cursor.execute('INSERT INTO users (full_name, email, password) VALUES (%s, %s, %s)', (full_name, email, hashed_password))
+            mysql.connection.commit()
+            flash('Signup successful. Please log in.', 'success')
+            return redirect(url_for('login'))
+
+        cursor.close()
+    return render_template('signup.html', message=message)
+
+# Login Page
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT * FROM users WHERE email = %s', (email,))
+        user = cursor.fetchone()
+        cursor.close()
+
+        if user and check_password_hash(user['password'], password):
+            session['user_id'] = user['userid']
+            flash('Login successful.', 'success')
+            return redirect(url_for('index'))
+        else:
+            flash('Incorrect email/password.', 'error')
+
+    return render_template('login.html')
+
+# Logout
 @app.route('/logout')
 def logout():
-    session.clear()  # Clear the session
-    flash("You've been logged out", "info")
+    session.clear()
+    flash('Logged out successfully.', 'info')
     return redirect(url_for('login'))
 
-# Prediction Route
+# Prediction Page
 @app.route('/predict', methods=['POST'])
 def predict():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))  # Ensure user is logged in before prediction
+    try:
+        form_data = {
+            'satisfaction_level': float(request.form['satisfaction_level']),
+            'last_evaluation': float(request.form['last_evaluation']),
+            'number_project': int(request.form['number_project']),
+            'average_monthly_hours': int(request.form['average_monthly_hours']),
+            'time_spend_company': int(request.form['time_spend_company']),
+            'work_accident': int(request.form['work_accident']),
+            'promotion_last_5years': int(request.form['promotion_last_5years']),
+            'Department': int(request.form['Department']),
+            'salary': int(request.form['salary']),
+        }
 
-    form_data = {
-        'satisfaction_level': float(request.form['satisfaction_level']),
-        'last_evaluation': float(request.form['last_evaluation']),
-        'number_project': int(request.form['number_project']),
-        'average_monthly_hours': int(request.form['average_monthly_hours']),
-        'time_spend_company': int(request.form['time_spend_company']),
-        'work_accident': int(request.form['work_accident']),
-        'promotion_last_5years': int(request.form['promotion_last_5years']),
-        'Department': int(request.form['Department']),
-        'salary': int(request.form['salary']),
-    }
+        model_path = os.path.join(os.path.dirname(__file__), 'final_prediction.pkl')
+        with open(model_path, 'rb') as model_file:
+            model = pickle.load(model_file)
 
-    # Load trained model for prediction
-    with open('final_prediction.pkl', 'rb') as model_file:
-        model = pickle.load(model_file)
+        input_data = pd.DataFrame([form_data])
+        input_data.columns = model.feature_names_in_
 
-    input_data = pd.DataFrame([form_data])
-    input_data.columns = model.feature_names_in_
+        prediction = model.predict(input_data)[0]
+        message = "⚠️ Employee likely to Leave" if prediction == 1 else "✅ Employee likely to Stay"
 
-    # Make prediction
-    predict = model.predict(input_data)[0]
-    msg = "⚠️ Employee is expected to Leave" if predict == 1 else "✅ Employee is expected to Stay"
+        return render_template('result.html', predict=prediction, message=message)
 
-    # Graphing logic (bar and curve plots for the features)
-    fig, ax = plt.subplots()
-    ax.bar(form_data.keys(), form_data.values())
-    ax.set_title("Feature Importance")
-    graph_url = save_plot(fig)
+    except Exception as e:
+        print(f"Prediction error: {e}")
+        flash('Prediction error. Please try again.', 'error')
+        return redirect(url_for('index'))
 
-    return render_template("result.html", predict=predict, message=msg, graph_url=graph_url)
-
-# Function to save the plot and return the URL
-def save_plot(fig):
-    img = io.BytesIO()
-    fig.savefig(img, format='png')
-    img.seek(0)
-    graph_url = base64.b64encode(img.getvalue()).decode('utf-8')
-    return graph_url
-
-# Running the app
+# --- Main ---
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=True)
