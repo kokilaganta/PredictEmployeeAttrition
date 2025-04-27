@@ -1,14 +1,10 @@
 from flask import Flask, redirect, render_template, request, session, url_for, flash
 from werkzeug.security import generate_password_hash, check_password_hash
-import MySQLdb
 from flask_mysqldb import MySQL
+import MySQLdb
 import re
 import pickle
 import pandas as pd
-import base64
-import io
-import matplotlib.pyplot as plt
-from urllib.parse import urlparse
 import os
 
 # Initialize Flask app
@@ -19,56 +15,22 @@ app.secret_key = os.urandom(24)  # Needed for session management
 mysql_url = os.getenv('MYSQL_URL', 'mysql://root:jsQSqZZuPRkTWmickRoBQYLmlxCVrKvt@mainline.proxy.rlwy.net:29593/railway')
 
 # Parse the URL to extract connection details
-url = urlparse(mysql_url)
-
-print(f"Host: {url.hostname}, Port: {url.port}, User: {url.username}, Database: {url.path}")
-# Parse the URL to extract connection details
+url = mysql_url.split('://')[1].split(':')
+host = url[0]
+port = int(url[1].split('/')[0])
+database = url[1].split('/')[1]
+user = url[2].split('@')[0]
+password = url[2].split('@')[1]
 
 # Configure Flask MySQL
-app.config['MYSQL_HOST'] = url.hostname
-app.config['MYSQL_USER'] = url.username
-app.config['MYSQL_PASSWORD'] = url.password
-app.config['MYSQL_DB'] = url.path[1:]  # Extract database name
-app.config['MYSQL_PORT'] = url.port
+app.config['MYSQL_HOST'] = host
+app.config['MYSQL_USER'] = user
+app.config['MYSQL_PASSWORD'] = password
+app.config['MYSQL_DB'] = database
+app.config['MYSQL_PORT'] = port
 
 # Initialize MySQL
 mysql = MySQL(app)
-
-# Connect to MySQLdb directly (if needed)
-connection = MySQLdb.connect(
-    host=app.config['MYSQL_HOST'],
-    user=app.config['MYSQL_USER'],
-    passwd=app.config['MYSQL_PASSWORD'],
-    db=app.config['MYSQL_DB'],
-    port=app.config['MYSQL_PORT']
-)
-
-@app.route('/')
-def index():
-    try:
-        # Create a cursor object to interact with the database
-        cursor = mysql.connection.cursor()
-
-        # Execute query to fetch all users
-        cursor.execute('SELECT * FROM users')
-        
-        # Fetch all results
-        results = cursor.fetchall()
-        
-        # Close the cursor
-        cursor.close()
-
-        # Return the results to be displayed in a template
-        return render_template('index.html', results=results)
-    
-    except Exception as e:
-        # Handle any errors (e.g., database connection issues)
-        print(f"Error occurred: {e}")
-        return "There was an error retrieving the data."
-
-# Running the app
-if __name__ == '__main__':
-    app.run(debug=True)
 
 # Signup Route
 @app.route('/signup', methods=['POST', 'GET'])
@@ -150,6 +112,23 @@ def login():
 
     return render_template('login.html')
 
+# Index Route - Home Page
+@app.route('/')
+def index():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))  # Redirect to login if user is not logged in
+
+    try:
+        cursor = mysql.connection.cursor()
+        cursor.execute('SELECT * FROM users')
+        results = cursor.fetchall()
+        cursor.close()
+        return render_template('index.html', results=results)
+
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        return "There was an error retrieving the data."
+
 # Logout Route
 @app.route('/logout')
 def logout():
@@ -160,6 +139,9 @@ def logout():
 # Prediction Route
 @app.route('/predict', methods=['POST'])
 def predict():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))  # Ensure user is logged in before prediction
+
     form_data = {
         'satisfaction_level': float(request.form['satisfaction_level']),
         'last_evaluation': float(request.form['last_evaluation']),
@@ -184,9 +166,21 @@ def predict():
     msg = "⚠️ Employee is expected to Leave" if predict == 1 else "✅ Employee is expected to Stay"
 
     # Graphing logic (bar and curve plots for the features)
-    # Add the graphs generation as done in your original code...
+    fig, ax = plt.subplots()
+    ax.bar(form_data.keys(), form_data.values())
+    ax.set_title("Feature Importance")
+    graph_url = save_plot(fig)
 
-    return render_template("result.html", predict=predict, message=msg)
+    return render_template("result.html", predict=predict, message=msg, graph_url=graph_url)
 
+# Function to save the plot and return the URL
+def save_plot(fig):
+    img = io.BytesIO()
+    fig.savefig(img, format='png')
+    img.seek(0)
+    graph_url = base64.b64encode(img.getvalue()).decode('utf-8')
+    return graph_url
+
+# Running the app
 if __name__ == '__main__':
     app.run(debug=True)
