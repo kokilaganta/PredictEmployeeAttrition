@@ -6,21 +6,23 @@ import re
 import os
 import pickle
 import pandas as pd
-
 from urllib.parse import urlparse
 
 # --- Flask App Setup ---
 app = Flask(__name__)
-app.secret_key = os.urandom(24)
+app.secret_key = os.environ.get("SECRET_KEY", os.urandom(24))
 
 # --- MySQL Database Setup (Railway DB) ---
-mysql_url = os.getenv('MYSQL_URL', 'mysql://root:jsQSqZZuPRkTWmickRoBQYLmlxCVrKvt@mainline.proxy.rlwy.net:29593/railway')
+mysql_url = os.getenv('MYSQL_URL')
+if not mysql_url:
+    raise Exception("MYSQL_URL environment variable is not set")
+
 url = urlparse(mysql_url)
 
 app.config['MYSQL_HOST'] = url.hostname
 app.config['MYSQL_USER'] = url.username
 app.config['MYSQL_PASSWORD'] = url.password
-app.config['MYSQL_DB'] = url.path.lstrip('/')  # 'railway' from URL
+app.config['MYSQL_DB'] = url.path.lstrip('/')
 app.config['MYSQL_PORT'] = url.port
 
 # Initialize MySQL
@@ -33,10 +35,10 @@ mysql = MySQL(app)
 def index():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    
+
     try:
         cursor = mysql.connection.cursor()
-        cursor.execute('SELECT * FROM users')
+        cursor.execute('SELECT * FROM new_users')  # Change here to use new_users table
         results = cursor.fetchall()
         cursor.close()
         return render_template('index.html', results=results)
@@ -53,24 +55,35 @@ def signup():
         email = request.form['email']
         password = request.form['password']
 
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM users WHERE email = %s', (email,))
-        account = cursor.fetchone()
-
-        if account:
-            message = 'Account already exists!'
+        if len(full_name) > 100:
+            message = 'Full name too long! Max 100 characters.'
         elif not re.match(r'[^@]+@[^@]+\.[^@]+', email):
             message = 'Invalid email address!'
         elif not full_name or not password or not email:
             message = 'Please fill out the form completely!'
         else:
-            hashed_password = generate_password_hash(password)
-            cursor.execute('INSERT INTO users (full_name, email, password) VALUES (%s, %s, %s)', (full_name, email, hashed_password))
-            mysql.connection.commit()
-            flash('Signup successful. Please log in.', 'success')
-            return redirect(url_for('login'))
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute('SELECT * FROM new_users WHERE email = %s', (email,))  # Change here to use new_users table
+            account = cursor.fetchone()
 
-        cursor.close()
+            if account:
+                message = 'Account already exists!'
+            else:
+                hashed_password = generate_password_hash(password)
+                try:
+                    cursor.execute(
+                        'INSERT INTO new_users (full_name, email, password) VALUES (%s, %s, %s)',  # Change here to use new_users table
+                        (full_name, email, hashed_password)
+                    )
+                    mysql.connection.commit()
+                    flash('Signup successful. Please log in.', 'success')
+                    return redirect(url_for('login'))
+                except Exception as e:
+                    mysql.connection.rollback()
+                    print(f"Signup error: {e}")
+                    message = 'Signup failed due to server error.'
+            cursor.close()
+
     return render_template('signup.html', message=message)
 
 # Login Page
@@ -81,7 +94,7 @@ def login():
         password = request.form['password']
 
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM users WHERE email = %s', (email,))
+        cursor.execute('SELECT * FROM new_users WHERE email = %s', (email,))  # Change here to use new_users table
         user = cursor.fetchone()
         cursor.close()
 
@@ -125,7 +138,7 @@ def predict():
         input_data.columns = model.feature_names_in_
 
         prediction = model.predict(input_data)[0]
-        message = "⚠️ Employee likely to Leave" if prediction == 1 else "✅ Employee likely to Stay"
+        message = "\u26a0\ufe0f Employee likely to Leave" if prediction == 1 else "\u2705 Employee likely to Stay"
 
         return render_template('result.html', predict=prediction, message=message)
 
